@@ -53,7 +53,6 @@ This is a fully responsive website project for the **Central Library at Universi
 ## 🚀 Live Demo
 
 👉 [Click here to view the demo](https://mustafa-ashraf2003.github.io/Educational-library/)  
-_(Replace `#` with your actual demo URL, e.g., GitHub Pages or Netlify link)_
 
 ---
 
