@@ -11,103 +11,148 @@ import {
 import firebaseConfig from "./config.js";
 
 // Initialize Firebase
-let app;
-let auth;
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-try {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  console.log("Firebase initialized successfully");
-} catch (error) {
-  console.error("Error initializing Firebase:", error);
-}
+// Add welcome message styles
+const style = document.createElement("style");
+style.textContent = `
+  .welcome-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    animation: welcomeAnimation 1.5s ease-out;
+    z-index: 1000;
+  }
 
-// submit button
-const submit = document.getElementById("sub_n1");
-submit.addEventListener("click", function (event) {
-  event.preventDefault();
-  console.log("Register button clicked");
-  register_f();
+  .welcome-content h2 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-size: 2rem;
+  }
+
+  .welcome-content p {
+    color: #7f8c8d;
+    font-size: 1.2rem;
+  }
+
+  @keyframes welcomeAnimation {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -60%);
+    }
+    100% {
+      opacity: 1;
+      transform: translate(-50%, -50%);
+    }
+  }
+
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+`;
+document.head.appendChild(style);
+
+// ربط الزر بالدالة بعد تحميل الصفحة
+window.addEventListener("DOMContentLoaded", () => {
+  const submitBtn = document.getElementById("sub_n1");
+  if (submitBtn) {
+    submitBtn.addEventListener("click", registerUser);
+  }
 });
 
-function register_f() {
-  try {
-    const email = document.getElementById("ema").value;
-    const password = document.getElementById("pwd2").value;
-    const rePassword = document.getElementById("re_pwd").value;
-    const age = document.getElementById("n_age").value;
+function registerUser(event) {
+  event.preventDefault();
 
-    console.log("Registration attempt with email:", email);
+  const email = document.getElementById("ema").value;
+  const password = document.getElementById("pwd2").value;
+  const confirmPassword = document.getElementById("re_pwd").value;
+  const age = document.getElementById("n_age").value;
 
-    // Validate all fields are filled
-    if (!email || !password || !rePassword || !age) {
-      alert("Please fill in all fields");
-      return;
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      alert("Please enter a valid email address");
-      return;
-    }
-
-    // Validate password length
-    if (password.length < 6) {
-      alert("Password must be at least 6 characters long");
-      return;
-    }
-
-    // Validate passwords match
-    if (password !== rePassword) {
-      alert("Passwords do not match");
-      return;
-    }
-
-    // Validate age is a valid date
-    if (!age) {
-      alert("Please enter a valid date of birth");
-      return;
-    }
-
-    console.log("Starting Firebase registration...");
-
-    // Create user with Firebase
-    createUserWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        // Signed up successfully
-        const user = userCredential.user;
-        console.log("User registered successfully:", user);
-        alert("Account created successfully!");
-        window.location.href = "grand.html";
-      })
-      .catch((error) => {
-        console.error("Firebase registration error:", error);
-        let errorMessage = "Registration failed: ";
-
-        switch (error.code) {
-          case "auth/email-already-in-use":
-            errorMessage += "This email is already registered";
-            break;
-          case "auth/invalid-email":
-            errorMessage += "Invalid email format";
-            break;
-          case "auth/operation-not-allowed":
-            errorMessage += "Email/password accounts are not enabled";
-            break;
-          case "auth/weak-password":
-            errorMessage += "Password is too weak";
-            break;
-          default:
-            errorMessage += error.message;
-        }
-
-        alert(errorMessage);
-      });
-  } catch (error) {
-    console.error("Unexpected error during registration:", error);
-    alert("An unexpected error occurred. Please try again.");
+  // Validate all fields
+  if (!email || !password || !confirmPassword || !age) {
+    alert("Please fill in all fields");
+    return;
   }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    alert("Please enter a valid email address");
+    return;
+  }
+
+  // Validate password length
+  if (password.length < 6) {
+    alert("Password must be at least 6 characters long");
+    return;
+  }
+
+  // Validate passwords match
+  if (password !== confirmPassword) {
+    alert("Passwords do not match");
+    return;
+  }
+
+  // Validate age
+  if (!age) {
+    alert("Please enter a valid date of birth");
+    return;
+  }
+
+  createUserWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      // Get the first part of the email (before @)
+      const email = userCredential.user.email;
+      const username = email.split("@")[0];
+
+      // Create welcome message element
+      const welcomeDiv = document.createElement("div");
+      welcomeDiv.className = "welcome-message";
+      welcomeDiv.innerHTML = `
+        <div class="welcome-content">
+          <h2>مرحباً بك ${username}</h2>
+          <p>تم إنشاء حسابك بنجاح</p>
+        </div>
+      `;
+      document.body.appendChild(welcomeDiv);
+
+      // Remove welcome message after 3 seconds and redirect
+      setTimeout(() => {
+        welcomeDiv.style.animation = "fadeOut 0.5s ease-out forwards";
+        setTimeout(() => {
+          window.location.href = "category.html";
+        }, 500);
+      }, 3000);
+    })
+    .catch((error) => {
+      let errorMessage = "Registration failed: ";
+      switch (error.code) {
+        case "auth/email-already-in-use":
+          errorMessage += "Email is already registered.";
+          break;
+        case "auth/invalid-email":
+          errorMessage += "Invalid email format.";
+          break;
+        case "auth/weak-password":
+          errorMessage += "Password should be at least 6 characters.";
+          break;
+        default:
+          errorMessage += error.message;
+      }
+      alert(errorMessage);
+    });
 }
 
 function valid_f() {
